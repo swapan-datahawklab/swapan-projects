@@ -1,0 +1,74 @@
+name: Build and Deploy to OpenShift
+
+on:
+  push:
+    branches:
+      - main  # Trigger when pushing to the main branch
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # Install Eclipse Temurin JDK
+          java-version: '17'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build with Maven
+        run: mvn clean package
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install OpenShift CLI (oc)
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvzf oc.tar.gz
+          sudo mv oc /usr/local/bin/oc
+          oc version
+
+      - name: Log in to OpenShift
+        env:
+          OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+          OPENSHIFT_API_URL: ${{ secrets.OPENSHIFT_API_URL }}
+        run: |
+          oc login --token=$OPENSHIFT_TOKEN --server=$OPENSHIFT_API_URL
+
+      - name: Create new build and deployment on OpenShift
+        run: |
+          if oc get bc/spring-boot-app; then
+            echo "Starting a new build for spring-boot-app"
+            oc start-build spring-boot-app --from-dir=target --follow
+          else
+            echo "Creating new app and build for spring-boot-app"
+            oc new-app --name=spring-boot-app \
+              --binary \
+              --image-stream=java:17 \
+              --strategy=source
+            oc start-build spring-boot-app --from-dir=target --follow
+          fi
+
+      - name: Deploy the application
+        run: |
+          oc rollout latest dc/spring-boot-app

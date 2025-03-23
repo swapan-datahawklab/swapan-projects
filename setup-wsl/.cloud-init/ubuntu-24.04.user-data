@@ -1,0 +1,132 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+groups:
+  - docker
+
+# Create a non-root user (without an initial password)
+users:
+  - name: developer1
+    gecos: "Non-root User"
+    groups: [sudo, docker]
+    shell: /bin/bash
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    lock_passwd: false
+
+# Create a /etc/wsl.config inside the distribution
+write_files:
+- path: /etc/wsl.conf
+  content: |
+    [user]
+    default=developer1
+    [boot]
+    systemd=true
+
+# install the following default packages  
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+  - unattended-upgrades
+  - unzip
+  - zip
+  - zsh
+  - git
+  - python3-pip
+  - python3-venv
+  - ruby-full 
+  - build-essential 
+  - zlib1g-dev
+
+runcmd:
+  # Generate a random password for developer1 non-root user, hash it, apply it, and output it.
+  - |
+    #!/bin/bash
+    echo "### generating password for nonroot user ###"
+    GENERATED_PASSWORD=$(openssl rand -base64 12)
+    HASHED_PASSWORD=$(openssl passwd -6 "$GENERATED_PASSWORD")
+    usermod --password "$HASHED_PASSWORD" developer1
+    echo "Generated password for developer1 is: $GENERATED_PASSWORD" | tee /var/log/initial_nonroot_password.txt
+
+  # Install Docker and Docker Compose and start the docker service(if systemd is available)
+  - |
+    #!/bin/bash
+    echo "### configure docker package repos ###"
+    mkdir -p /etc/apt/keyrings || { echo "Failed to create Docker keyrings directory"; exit 1; }
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg || { echo "Failed to download Docker GPG key"; exit 1; }
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    apt-get update
+    echo "### install docker ###"
+    apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    echo "### checking if docker service is up and starting docker service if down ###"
+    systemctl is-active --quiet docker && echo "Docker service is already running" || systemctl start docker || { echo "Failed to start Docker service"; exit 1; }
+    echo "### Installing latest Docker Compose ###"
+    bash -c 'COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep "tag_name" | cut -d\" -f4) && curl -SL https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose'
+    docker-compose --version || { echo "Failed to verify Docker Compose installation."; exit 1; }
+
+  # Configure Zsh and install Oh-My-Zsh
+  - |
+    #!/bin/bash
+    echo "### configuring zsh and installing oh-my-zsh ###"
+    chsh -s $(which zsh) developer1 || { echo "Failed to set Zsh as default shell for developer1"; exit 1; }
+    su - developer1 -c 'sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended' || { echo "Failed to install Oh-My-Zsh for developer1"; exit 1; }
+    su - developer1 -c 'cp ~/.oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc' || { echo "Failed to copy Oh-My-Zsh template to developer1's .zshrc"; exit 1; }
+    su - developer1 -c 'sed -i "s/ZSH_THEME=\"robbyrussell\"/ZSH_THEME=\"agnoster\"/" ~/.zshrc' || { echo "Failed to set Zsh theme to agnoster for developer1"; exit 1; }
+
+  # Installing latest LTS java and Maven
+  - |
+    #!/bin/bash
+    echo "### Installing latest LTS java and Maven via sdkman ###"
+    su - developer1 -c 'curl -s "https://get.sdkman.io" | bash' || { echo "Failed to install SDKMAN for developer1"; exit 1; }
+    su - developer1 -c 'bash -c "source \$HOME/.sdkman/bin/sdkman-init.sh && sdk install java && sdk install maven"' || { echo "Failed to install latest LTS Java and Maven for developer1"; exit 1; }
+
+  # Installing latest LTS Nodejs and NPM
+  - |
+    #!/bin/bash
+    echo "### IInstalling latest LTS Nodejs and NPM via NVM ###"
+    su - developer1 -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash' || { echo "Failed to install NVM for developer1"; exit 1; }
+    su - developer1 -c 'bash -c "export NVM_DIR=\$HOME/.nvm && [ -s \$NVM_DIR/nvm.sh ] && . \$NVM_DIR/nvm.sh && nvm install --lts"' || { echo "Failed to install latest LTS Nodejs and NPM for developer1"; exit 1; }
+
+  # Installing latest Openshift CLI
+  - |
+    #!/bin/bash
+    echo "### Installing latest Openshift CLI ###"
+    wget -qO /tmp/openshift-client-linux.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz || { echo "Failed to download OpenShift CLI"; exit 1; }
+    tar -xzf /tmp/openshift-client-linux.tar.gz -C /tmp
+    mv /tmp/oc /usr/local/bin/oc
+    chmod +x /usr/local/bin/oc
+    oc version --client || { echo "Failed to verify OpenShift CLI installation."; exit 1; } 
+
+  # Installing Ruby and Jekyll for Github Pages
+  - |
+    #!/bin/bash
+    echo "### Installing Ruby and Jekyll for Github Pages ###"
+    su - developer1 -c 'echo "export GEM_HOME=\$HOME/gems" >> ~/.zshrc' || { echo "Failed to add Ruby Gems environment variables to developer1's .zshrc"; exit 1; }
+    su - developer1 -c 'echo "export PATH=\$HOME/gems/bin:\$PATH" >> ~/.zshrc' || { echo "Failed to add Ruby Gems environment variables to developer1's .zshrc"; exit 1; }
+    su - developer1 -c 'zsh -c "source ~/.zshrc && gem install jekyll bundler"' || { echo "Failed to install Jekyll and Bundler for developer1"; exit 1; }
+
+  # Configure git and create SSH key for default non-root user
+  - |
+    #!/bin/bash
+    echo "### configure git and generating SSH key for github ###"
+    su - developer1 -c 'git config --global user.name "Swapan Chakrabarty"' || { echo "Failed to set Git username for developer1"; exit 1; }
+    su - developer1 -c 'git config --global user.email "swapan.chakrabarty@datahawklab.com"' || { echo "Failed to set Git email for developer1"; exit 1; }
+    su - developer1 -c 'mkdir -p ~/.ssh && ssh-keygen -t ed25519 -C "swapan.chakrabarty@datahawklab.com" -f ~/.ssh/id_ed25519 -N ""' || { echo "Failed to generate SSH key for developer1"; exit 1; }
+
+  # Create Python venv for default non-root user and install Ansible as default non-root user
+  - |
+    #!/bin/bash
+    echo "### Creating Python venv for default non-root user and installing Ansible ###"
+    su - developer1 -c 'python3 -m venv ~/venv' || { echo "Failed to create Python venv for developer1"; exit 1; }
+    su - developer1 -c '~/venv/bin/pip install --upgrade pip' || { echo "Failed to upgrade pip in Python venv for developer1"; exit 1; }
+    su - developer1 -c '~/venv/bin/pip install ansible' || { echo "Failed to install Ansible in Python venv for developer1"; exit 1; }
+    su - developer1 -c 'echo "source ~/venv/bin/activate" >> ~/.zshrc' || { echo "Failed to add Python venv activation to developer1's .zshrc"; exit 1; }
+
+  # # to check logs
+  # # sudo cp /var/log/cloud-init.log ~ && sudo chown $USER ~/cloud-init.log && code ~/cloud-init.log
+  # # sudo cp /var/log/cloud-init-output.log ~ && sudo chown $USER ~/cloud-init-output.log && code ~/cloud-init-output.log
+  # # ubuntu2404.exe
+  # # wsl --unregister Ubuntu-24.04 

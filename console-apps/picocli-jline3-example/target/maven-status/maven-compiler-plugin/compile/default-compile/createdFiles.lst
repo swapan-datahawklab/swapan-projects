@@ -1,0 +1,13 @@
+clidemo\Application.class
+clidemo\cli\parser\VersionProvider.class
+clidemo\cli\commands\CreateCommand.class
+clidemo\cli\commands\DeleteCommand.class
+clidemo\Example.class
+clidemo\Example$MyCommand$MyDuration.class
+clidemo\Example$Nested.class
+clidemo\cli\commands\UpdateCommand.class
+clidemo\Example$MyCommand.class
+clidemo\cli\commands\ListCommand.class
+clidemo\cli\common\HelpOption.class
+clidemo\cli\parser\CommandLineParser.class
+clidemo\Example$CliCommands.class
