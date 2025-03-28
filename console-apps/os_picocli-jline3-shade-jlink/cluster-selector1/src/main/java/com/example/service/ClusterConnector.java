@@ -1,21 +1,25 @@
 package com.example.service;
 
-import com.example.model.Cluster;
-import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.ConfigBuilder;
-import io.fabric8.openshift.client.DefaultOpenShiftClient;
 import io.fabric8.openshift.client.OpenShiftClient;
+import com.example.model.Cluster;
+
+import java.util.List;
 
 public class ClusterConnector {
-    public void connect(Cluster cluster) {
-        Config config = new ConfigBuilder()
-                .withMasterUrl(cluster.url)
-                .withNamespace(cluster.context)
-                .build();
-        try (OpenShiftClient client = new DefaultOpenShiftClient(config)) {
-            System.out.printf("Connected to %s: version=%s%n", cluster.context, client.getVersion().getGitVersion());
-        } catch (Exception e) {
-            System.err.printf("Failed to connect to %s: %s%n", cluster.context, e.getMessage());
+    private final OpenShiftClient client;
+
+    public ClusterConnector(OpenShiftClient client) {
+        this.client = client;
+    }
+
+    // Example method to interact with the clusters
+    public void connectToClusters(List<Cluster> clusters) {
+        for (Cluster cluster : clusters) {
+            // Example interaction with the cluster using the OpenShiftClient
+            System.out.printf("Connecting to cluster: %s (%s)%n", cluster.getName(), cluster.getContext());
+            // Add your logic to interact with the cluster here
         }
     }
+
+    // Add more methods to interact with the clusters using the client
 }

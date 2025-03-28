@@ -9,42 +9,57 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <picocli.version>4.7.6</picocli.version>
+        <jline.version>3.27.1</jline.version>
+        <fabric8.client.version>7.1.0</fabric8.client.version>
+        <jackson.version>2.18.3</jackson.version>
+        <maven.compiler.plugin.version>3.14.0</maven.compiler.plugin.version>
+        <maven.shade.plugin.version>3.6.0</maven.shade.plugin.version>
+        <moditect.maven.plugin.version>1.2.2.Final</moditect.maven.plugin.version>
     </properties>
     <dependencies>
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
-            <version>4.7.6</version>
+            <version>${picocli.version}</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.graalvm.shadowed/jline -->
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline</artifactId>
-            <version>3.29.0</version>
+            <version>${jline.version}</version>
         </dependency>
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>openshift-client</artifactId>
-            <version>5.12.0</version>
-        </dependency>
+    <dependency>
+      <groupId>io.fabric8</groupId>
+      <artifactId>openshift-client-api</artifactId>
+      <version>${fabric8.client.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.fabric8</groupId>
+      <artifactId>openshift-client</artifactId>
+      <version>${fabric8.client.version}</version>
+      <scope>runtime</scope>
+    </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.15.0</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.15.0</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.15.0</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.15.0</version>
+            <version>${jackson.version}</version>
         </dependency>
     </dependencies>
     <build>
@@ -52,7 +67,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>${maven.compiler.plugin.version}</version>
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
@@ -62,7 +77,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>${maven.shade.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -75,7 +90,7 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.example.ClusterSelector</mainClass>
                                 </transformer> 
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                                <!-- <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                                     <addHeader>false</addHeader>
                                 </transformer>         
                                  <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
@@ -83,10 +98,18 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>      
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
                                     <resource>module-info.class</resource>
-                                </transformer>   
+                                </transformer>    -->
                             </transformers>
                             <shadedClassifierName>shaded</shadedClassifierName>
-                        <filters>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <relocations>
+                                <!-- Optional: Relocate packages to avoid conflicts -->
+                                <relocation>
+                                    <pattern>io.fabric8.openshift.api.model.config.v1</pattern>
+                                    <shadedPattern>shaded.io.fabric8.openshift.api.model.config.v1</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        <!-- <filters>
                             <filter>
                                 <artifact>*:*</artifact>
                                 <excludes>
@@ -97,16 +120,16 @@
                                     <exclude>schema/validation-schema.json</exclude>
                                     <exclude>manifest.vm</exclude>
                                 </excludes>
-                        </filter>
-                        </filters>
+                            </filter>
+                        </filters> -->
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-           <plugin>
+           <!-- <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
-                <version>1.2.2.Final</version>
+                <version>${moditect.maven.plugin.version}</version>
                 <executions>
                 <execution>
                     <id>add-module-infos</id>
@@ -124,7 +147,7 @@
                     </configuration>
                 </execution>
                 </executions>
-        </plugin>
+            </plugin> -->
 
         </plugins>
     </build>

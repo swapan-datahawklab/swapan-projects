@@ -1,0 +1,16 @@
+*/target/**  # Ignore all files in target directories
+*.jar  # Ignore all JAR files
+*.class  # Ignore all class files
+*.log  # Ignore all log files
+*.tmp  # Ignore all temporary files
+*.swp  # Ignore swap files
+*.DS_Store  # Ignore macOS Finder files
+*.iml  # Ignore IntelliJ IDEA module files
+*.idea/  # Ignore IntelliJ IDEA project files
+*.project  # Ignore Eclipse project files
+*.classpath  # Ignore Eclipse classpath files
+*.settings/  # Ignore Eclipse settings files
+*.vscode/  # Ignore Visual Studio Code settings files
+*.gradle/  # Ignore Gradle files
+*.mvn/  # Ignore Maven files
+console-apps/os_picocli-jline3-shade-jlink/cluster-selector/target/

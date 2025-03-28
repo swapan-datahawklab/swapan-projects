@@ -11,6 +11,12 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
+import io.fabric8.kubernetes.client.dsl.base.OperationContext;
+import io.fabric8.openshift.client.OpenShiftClient;
+import io.fabric8.openshift.client.OpenShiftClientBuilder;
 
 import java.io.InputStream;
 import java.util.*;
@@ -56,10 +62,12 @@ public class ClusterSelector implements Callable<Integer> {
         System.out.println("Selected clusters:");
         selected.forEach(c -> System.out.printf("- %s%n", c.name));
 
-        ClusterConnector connector = new ClusterConnector();
-        for (Cluster c : selected) {
-            connector.connect(c);
+        // Use OpenShiftClientBuilder instead of DefaultOpenShiftClient
+        try (OpenShiftClient client = new OpenShiftClientBuilder().build()) {
+            ClusterConnector connector = new ClusterConnector(client);
+            connector.connectToClusters(selected); // Use the connector with the selected clusters
         }
+
         return 0;
     }
 }

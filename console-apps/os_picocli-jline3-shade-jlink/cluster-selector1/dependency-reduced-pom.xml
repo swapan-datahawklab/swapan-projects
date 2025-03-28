@@ -30,29 +30,15 @@
                 <transformer>
                   <mainClass>com.example.ClusterSelector</mainClass>
                 </transformer>
-                <transformer>
-                  <addHeader>false</addHeader>
-                </transformer>
-                <transformer />
-                <transformer />
-                <transformer>
-                  <resource>module-info.class</resource>
-                </transformer>
               </transformers>
               <shadedClassifierName>shaded</shadedClassifierName>
-              <filters>
-                <filter>
-                  <artifact>*:*</artifact>
-                  <excludes>
-                    <exclude>META-INF/*.MF</exclude>
-                    <exclude>META-INF/versions/**</exclude>
-                    <exclude>META-INF/jandex.idx</exclude>
-                    <exclude>schema/kube-schema.json</exclude>
-                    <exclude>schema/validation-schema.json</exclude>
-                    <exclude>manifest.vm</exclude>
-                  </excludes>
-                </filter>
-              </filters>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <relocations>
+                <relocation>
+                  <pattern>io.fabric8.openshift.api.model.config.v1</pattern>
+                  <shadedPattern>shaded.io.fabric8.openshift.api.model.config.v1</shadedPattern>
+                </relocation>
+              </relocations>
             </configuration>
           </execution>
         </executions>
