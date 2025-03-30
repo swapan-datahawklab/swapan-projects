@@ -98,17 +98,17 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>      
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
                                     <resource>module-info.class</resource>
-                                </transformer>    -->
+                                </transformer>   -->
                             </transformers>
                             <shadedClassifierName>shaded</shadedClassifierName>
-                            <createDependencyReducedPom>true</createDependencyReducedPom>
-                            <relocations>
-                                <!-- Optional: Relocate packages to avoid conflicts -->
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <!-- <relocations>
+                                Optional: Relocate packages to avoid conflicts
                                 <relocation>
                                     <pattern>io.fabric8.openshift.api.model.config.v1</pattern>
                                     <shadedPattern>shaded.io.fabric8.openshift.api.model.config.v1</shadedPattern>
                                 </relocation>
-                            </relocations>
+                            </relocations> -->
                         <!-- <filters>
                             <filter>
                                 <artifact>*:*</artifact>

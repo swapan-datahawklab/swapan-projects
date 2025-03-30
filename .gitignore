@@ -14,3 +14,4 @@
 *.gradle/  # Ignore Gradle files
 *.mvn/  # Ignore Maven files
 console-apps/os_picocli-jline3-shade-jlink/cluster-selector/target/
+console-apps/os_picocli-jline3-shade-jlink/cluster-selector1/target/
