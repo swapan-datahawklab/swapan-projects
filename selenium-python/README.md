@@ -1,3 +1,18 @@
+/html/body/p[1]/table[4]/tbody/tr/td[2]/text()[2] = a string should not say "There are 0 databases in this list."
+
+xlpath to dbname, 
+/html/body/p[1]/table[4]/tbody/tr/td[2]/p[2]/table/tbody/tr/td[1]/a
+xpath to "space allocated"
+/html/body/p[1]/table[4]/tbody/tr/td[2]/p[2]/table/tbody/tr/td[3]
+xpath to spaces used  
+/html/body/p[1]/table[4]/tbody/tr/td[2]/p[2]/table/tbody/tr/td[4]
+
+the csv should look like:
+
+db_name,space_allocated,space_used
+
+based on this info, refactor all code that is required to be refactored in this repo
+
 # Database Size Scraper
 
 This Python script scrapes database information from a web page and saves it to a CSV file. It uses Chrome browser to open each URL for visual verification.
