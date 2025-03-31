@@ -1,84 +1,73 @@
-import requests
-from bs4 import BeautifulSoup
 import pandas as pd
 import time
 import os
-import subprocess
 from datetime import datetime
 from urllib.parse import quote
-from lxml import html
-import urllib3
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-# Disable SSL warnings
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-def open_chrome(url):
-    """Open Chrome browser with the given URL"""
+def setup_chrome_driver():
+    """Setup Chrome driver with Selenium"""
+    chrome_options = Options()
     chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-    if os.path.exists(chrome_path):
-        subprocess.Popen([chrome_path, url])
-    else:
-        print(f"Chrome not found at {chrome_path}")
-        print("Please update the chrome_path variable with your Chrome installation path")
+    chrome_options.binary_location = chrome_path
+    service = Service('chromedriver.exe')  # Make sure chromedriver.exe is in the same directory
+    return webdriver.Chrome(service=service, options=chrome_options)
 
 def scrape_database_info(base_url, db_names):
-    """Scrape database information from the URL"""
+    """Scrape database information using Chrome directly"""
     results = []
+    driver = setup_chrome_driver()
     
-    # Configure session with custom SSL settings
-    session = requests.Session()
-    session.verify = False  # Disable SSL verification
-    session.mount('https://', requests.adapters.HTTPAdapter(
-        max_retries=3,
-        pool_connections=1,
-        pool_maxsize=1
-    ))
-    
-    for db_name in db_names:
-        # URL encode the database name
-        encoded_db_name = quote(db_name.strip())
-        url = f"{base_url}databse={encoded_db_name}&filter="
-        print(f"Processing URL: {url}")
-        
-        try:
-            # Make HTTP request with custom headers
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-            response = session.get(url, headers=headers)
-            response.raise_for_status()
+    try:
+        for db_name in db_names:
+            encoded_db_name = quote(db_name.strip())
+            url = f"{base_url}databse={encoded_db_name}&filter="
+            print(f"Processing URL: {url}")
             
-            # Parse HTML with lxml for XPath support
-            tree = html.fromstring(response.content)
-            
-            # Check if there are databases in the list
-            no_dbs_text = tree.xpath('/html/body/p[1]/table[4]/tbody/tr/td[2]/text()[2]')
-            if no_dbs_text and "There are 0 databases in this list." in no_dbs_text[0]:
-                print(f"No databases found for {db_name}")
+            try:
+                driver.get(url)
+                
+                # Wait for table to load
+                wait = WebDriverWait(driver, 10)
+                table = wait.until(EC.presence_of_element_located((By.XPATH, '/html/body/p[1]/table[4]')))
+                
+                # Check if there are databases in the list
+                no_dbs_text = table.text
+                if "There are 0 databases in this list." in no_dbs_text:
+                    print(f"No databases found for {db_name}")
+                    continue
+                
+                # Find all database rows
+                rows = driver.find_elements(By.XPATH, '/html/body/p[1]/table[4]/tbody/tr/td[2]/p[2]/table/tbody/tr')
+                
+                for row in rows:
+                    try:
+                        db = row.find_element(By.XPATH, './td[1]/a').text.strip()
+                        allocated = row.find_element(By.XPATH, './td[3]').text.strip()
+                        used = row.find_element(By.XPATH, './td[4]').text.strip()
+                        
+                        results.append({
+                            'db_name': db,
+                            'space_allocated': allocated,
+                            'space_used': used
+                        })
+                    except Exception as e:
+                        print(f"Error processing row: {str(e)}")
+                        continue
+                
+                time.sleep(2)  # Small delay between requests
+                
+            except Exception as e:
+                print(f"Error processing URL {url}: {str(e)}")
                 continue
-            
-            # Extract database information using XPath
-            db_names = tree.xpath('/html/body/p[1]/table[4]/tbody/tr/td[2]/p[2]/table/tbody/tr/td[1]/a/text()')
-            space_allocated = tree.xpath('/html/body/p[1]/table[4]/tbody/tr/td[2]/p[2]/table/tbody/tr/td[3]/text()')
-            space_used = tree.xpath('/html/body/p[1]/table[4]/tbody/tr/td[2]/p[2]/table/tbody/tr/td[4]/text()')
-            
-            # Combine the data
-            for db, allocated, used in zip(db_names, space_allocated, space_used):
-                results.append({
-                    'db_name': db.strip(),
-                    'space_allocated': allocated.strip(),
-                    'space_used': used.strip()
-                })
-            
-            # Open Chrome for visual verification
-            open_chrome(url)
-            
-            # Add a small delay to prevent overwhelming the server
-            time.sleep(2)
-            
-        except Exception as e:
-            print(f"Error processing URL {url}: {str(e)}")
-            continue
+                
+    finally:
+        driver.quit()
     
     return results
 
