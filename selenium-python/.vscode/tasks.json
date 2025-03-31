@@ -1,0 +1,49 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Check and Activate Virtual Environment",
+            "type": "shell",
+            "command": "if exist C:\\virtualenvironments\\db_scraper_venv\\Scripts\\activate.bat (call C:\\virtualenvironments\\db_scraper_venv\\Scripts\\activate.bat) else (echo Virtual environment not found. Please run setup_venv.bat first && exit /b 1)",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Install Requirements",
+            "type": "shell",
+            "command": "pip install -r requirements.txt",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "dependsOn": [
+                "Check and Activate Virtual Environment"
+            ]
+        },
+        {
+            "label": "Run Database Scraper",
+            "type": "shell",
+            "command": "python db_size_scraper.py",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "dependsOn": [
+                "Install Requirements"
+            ]
+        },
+        {
+            "label": "Setup and Run All",
+            "dependsOn": [
+                "Check and Activate Virtual Environment",
+                "Install Requirements",
+                "Run Database Scraper"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+} 
