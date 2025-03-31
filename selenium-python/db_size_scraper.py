@@ -7,6 +7,10 @@ import subprocess
 from datetime import datetime
 from urllib.parse import quote
 from lxml import html
+import urllib3
+
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def open_chrome(url):
     """Open Chrome browser with the given URL"""
@@ -21,6 +25,15 @@ def scrape_database_info(base_url, db_names):
     """Scrape database information from the URL"""
     results = []
     
+    # Configure session with custom SSL settings
+    session = requests.Session()
+    session.verify = False  # Disable SSL verification
+    session.mount('https://', requests.adapters.HTTPAdapter(
+        max_retries=3,
+        pool_connections=1,
+        pool_maxsize=1
+    ))
+    
     for db_name in db_names:
         # URL encode the database name
         encoded_db_name = quote(db_name.strip())
@@ -28,8 +41,11 @@ def scrape_database_info(base_url, db_names):
         print(f"Processing URL: {url}")
         
         try:
-            # Make HTTP request
-            response = requests.get(url)
+            # Make HTTP request with custom headers
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            response = session.get(url, headers=headers)
             response.raise_for_status()
             
             # Parse HTML with lxml for XPath support
