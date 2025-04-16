@@ -1,10 +1,11 @@
 # Settings apply across all Linux distros running on WSL 2
 [wsl2]
 processors=4
-memory=4GB 
 swap=8GB
 swapfile=C:\\WSL\\wsl-swap.vhdx
 localhostforwarding=true
+memory=8589934592
+idleTimeout=-1
 
 [experimental]
 autoMemoryReclaim=gradual
